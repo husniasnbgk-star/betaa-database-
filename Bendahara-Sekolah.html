@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bendahara Sekolah — Tanda Terima & Daftar Hadir</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F8; --surface:#FFFFFF; --ink:#16233A; --muted:#64748B;
+    --primary:#1F4E79; --primary-dark:#163A5C;
+    --accent:#0EA173; --accent-soft:#E4F5EE;
+    --gold:#B8792E; --gold-soft:#FBF0E1;
+    --border:#E1E6EC; --danger:#D64545; --danger-soft:#FBEAEA;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--gold),#8A5A20);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;}
+  .brand-text h1{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin:0;letter-spacing:.2px;}
+  .brand-text p{margin:0;color:var(--muted);font-size:12.5px;}
+  .status-cluster{display:flex;align-items:center;gap:14px;}
+  .sync-pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:20px;background:var(--accent-soft);border:1px solid rgba(14,161,115,.25);font-size:12.5px;color:var(--primary-dark);}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+  .sync-dot.busy{animation:pulse 1s infinite;}
+  .sync-dot.off{background:var(--muted);}
+  .sync-dot.error{background:var(--danger);}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(14,161,115,.5);}70%{box-shadow:0 0 0 8px rgba(14,161,115,0);}100%{box-shadow:0 0 0 0 rgba(14,161,115,0);}}
+  button{font-family:'Inter',sans-serif;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--surface);padding:9px 16px;font-size:13.5px;font-weight:500;color:var(--ink);transition:background .15s,border-color .15s;}
+  button:hover{border-color:var(--primary);}
+  button.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  button.primary:hover{background:var(--primary-dark);}
+  button.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+  button.gold:hover{background:#8A5A20;}
+  button.ghost-danger{color:var(--danger);}
+  button.ghost-danger:hover{border-color:var(--danger);background:var(--danger-soft);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+
+  main{max-width:1180px;margin:0 auto;padding:20px 28px 60px;}
+
+  .config-card{background:#FFF9EC;border:1px solid #F0DCA8;border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;font-size:13px;display:none;}
+  .config-card.show{display:block;}
+  .config-card h3{margin:0 0 6px;font-size:14px;font-family:'Space Grotesk',sans-serif;}
+  .config-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .config-row input{flex:1;min-width:260px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+  .tab-btn{border:none;background:none;padding:10px 6px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;border-radius:0;}
+  .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
+  @media (max-width:820px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:14.5px;margin:0 0 14px;}
+  .form-card{position:sticky;top:20px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .field input,.field select{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border);font-size:13.5px;font-family:'Inter',sans-serif;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);}
+  .form-actions{display:flex;gap:8px;margin-top:16px;}
+  .form-actions button{flex:1;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .toolbar input[type=text]{padding:8px 12px;border-radius:8px;border:1px solid var(--border);width:220px;font-size:13px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{text-align:left;padding:9px 10px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:12px;white-space:nowrap;}
+  tbody td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;max-width:220px;overflow-wrap:anywhere;}
+  tbody tr:hover{background:#FAFBFC;}
+  .row-actions{display:flex;gap:6px;white-space:nowrap;}
+  .row-actions button{padding:5px 9px;font-size:12px;}
+  .empty-state{text-align:center;color:var(--muted);padding:40px 10px;font-size:13px;}
+  .badge-count{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;}
+  .status-pill{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:500;}
+  .status-hadir{background:var(--accent-soft);color:#0B6B4E;}
+  .status-izin{background:#FFF3D6;color:#8A6116;}
+  .status-sakit{background:#E5EEFB;color:#1E4E8C;}
+  .status-alpa{background:var(--danger-soft);color:#A32C2C;}
+
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;left:0;width:100%;padding:24px;}
+  }
+  .receipt-box{max-width:480px;margin:0 auto;border:1px solid #333;padding:24px;font-family:'Inter',sans-serif;}
+  .receipt-box h2{text-align:center;font-family:'Space Grotesk',sans-serif;margin:0 0 4px;font-size:18px;}
+  .receipt-box .sub{text-align:center;color:#555;font-size:12px;margin-bottom:18px;}
+  .receipt-row{display:flex;margin-bottom:10px;font-size:13px;}
+  .receipt-row .label{width:150px;color:#555;}
+  .receipt-row .colon{width:12px;}
+  .receipt-sign{display:flex;justify-content:space-between;margin-top:50px;font-size:13px;}
+  .receipt-sign div{text-align:center;width:45%;}
+  .receipt-sign .line{margin-top:60px;border-top:1px solid #333;padding-top:4px;}
+  .attendance-print h2{text-align:center;font-family:'Space Grotesk',sans-serif;margin:0 0 4px;}
+  .attendance-print .sub{text-align:center;margin-bottom:16px;font-size:13px;}
+  .attendance-print table{width:100%;border-collapse:collapse;}
+  .attendance-print th,.attendance-print td{border:1px solid #333;padding:6px 8px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">BSK</div>
+    <div class="brand-text">
+      <h1>Bendahara Sekolah</h1>
+      <p>Tanda terima uang &amp; daftar hadir · tersimpan ke Google Drive</p>
+    </div>
+  </div>
+  <div class="status-cluster">
+    <div class="sync-pill">
+      <div class="sync-dot off" id="syncDot"></div>
+      <span id="syncLabel" class="mono">belum terhubung</span>
+    </div>
+    <button id="btnSettings">Pengaturan</button>
+    <button id="btnAuth" class="primary">Masuk dengan Google</button>
+  </div>
+</header>
+
+<main>
+  <div class="config-card" id="configCard">
+    <h3>Pengaturan koneksi</h3>
+    <p style="margin:0;color:var(--muted);">
+      Aplikasi ini memakai OAuth Client ID yang sama dengan aplikasi BETAA (sudah terdaftar untuk domain GitHub Pages-mu).
+      Kalau belum terisi, tempel di sini atau edit <span class="mono">CONFIG.CLIENT_ID</span> langsung di kode.
+    </p>
+    <div class="config-row">
+      <input type="text" id="clientIdInput" placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com">
+      <button id="btnSaveClientId" class="primary">Terapkan</button>
+    </div>
+    <p style="margin:10px 0 0;color:var(--muted);">
+      Data disimpan di folder Drive yang sama dengan BETAA, dalam file terpisah
+      <span class="mono">bendahara-sekolah.json</span>, jadi tidak akan bentrok dengan data laporan kegiatan.
+    </p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="receipt">Tanda Terima Uang</button>
+    <button class="tab-btn" data-tab="attendance">Daftar Hadir</button>
+  </div>
+
+  <!-- TANDA TERIMA UANG -->
+  <div class="tab-panel active" id="panel-receipt">
+    <div class="grid">
+      <div class="card form-card">
+        <h2 id="receiptFormTitle">Buat Tanda Terima</h2>
+        <form id="receiptForm">
+          <div class="field"><label>Tanggal</label><input type="date" data-f="tanggal"></div>
+          <div class="field"><label>Diterima dari</label><input type="text" data-f="dari" placeholder="Nama / instansi pengirim"></div>
+          <div class="field"><label>Jumlah (Rp)</label><input type="number" data-f="jumlah" placeholder="0"></div>
+          <div class="field"><label>Untuk keperluan</label><input type="text" data-f="keperluan" placeholder="Contoh: Pembayaran SPP bulan Juli"></div>
+          <div class="field"><label>Diterima oleh (nama &amp; jabatan)</label><input type="text" data-f="penerima" placeholder="Contoh: Husni, Bendahara"></div>
+        </form>
+        <div class="form-actions">
+          <button type="button" id="btnSubmitReceipt" class="gold">Simpan &amp; Buat Nomor</button>
+          <button type="button" id="btnCancelReceipt" style="display:none;">Batal</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="searchReceipt" placeholder="Cari tanda terima...">
+          <span class="badge-count mono" id="receiptCount">0 data</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th>No. Tanda Terima</th><th>Tanggal</th><th>Dari</th><th>Jumlah</th><th>Keperluan</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="receiptBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="receiptEmpty">Belum ada tanda terima.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAFTAR HADIR -->
+  <div class="tab-panel" id="panel-attendance">
+    <div class="grid">
+      <div class="card form-card">
+        <h2 id="attFormTitle">Tambah Kehadiran</h2>
+        <form id="attForm">
+          <div class="field"><label>Tanggal</label><input type="date" data-f="tanggal"></div>
+          <div class="field"><label>Nama kegiatan</label><input type="text" data-f="kegiatan" placeholder="Contoh: Rapat komite sekolah"></div>
+          <div class="field"><label>Nama peserta</label><input type="text" data-f="nama"></div>
+          <div class="field"><label>Jabatan / kelas</label><input type="text" data-f="jabatan"></div>
+          <div class="field"><label>Status</label>
+            <select data-f="status">
+              <option value="Hadir">Hadir</option>
+              <option value="Izin">Izin</option>
+              <option value="Sakit">Sakit</option>
+              <option value="Alpa">Alpa</option>
+            </select>
+          </div>
+        </form>
+        <div class="form-actions">
+          <button type="button" id="btnSubmitAtt" class="primary">Simpan Data</button>
+          <button type="button" id="btnCancelAtt" style="display:none;">Batal</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="searchAtt" placeholder="Cari nama / kegiatan...">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="badge-count mono" id="attCount">0 data</span>
+            <button id="btnPrintAtt">Cetak Daftar</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th>Tanggal</th><th>Kegiatan</th><th>Nama</th><th>Jabatan/Kelas</th><th>Status</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="attBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="attEmpty">Belum ada data kehadiran.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="printArea"></div>
+
+<script>
+const CONFIG = {
+  CLIENT_ID: '912546967395-9cq89bhec07vv6stp7deqibbnlqrs4qs.apps.googleusercontent.com',
+  FOLDER_ID: '1gpDr1Bqe_22OL2H43DwvRVhGJYjsHp99', // folder BETAA (dipakai bersama)
+  DB_FILENAME: 'bendahara-sekolah.json',
+  SCOPE: 'https://www.googleapis.com/auth/drive.file'
+};
+
+let state = { receipts: [], attendance: [] };
+let dbFileId = null;
+let accessToken = null;
+let tokenClient = null;
+let editingReceiptId = null;
+let editingAttId = null;
+
+const el = (id) => document.getElementById(id);
+const uid = () => 'x_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const rupiah = (n) => 'Rp ' + Number(n||0).toLocaleString('id-ID');
+const tglIndo = (iso) => {
+  if(!iso) return '-';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+};
+
+function setSync(mode, label){
+  el('syncDot').className = 'sync-dot ' + mode;
+  el('syncLabel').textContent = label;
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    el('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- Auth ----------
+function ensureClientId(){
+  if (!CONFIG.CLIENT_ID){ el('configCard').classList.add('show'); setSync('off','client id belum diisi'); return false; }
+  return true;
+}
+function initAuth(){
+  if (!window.google || !CONFIG.CLIENT_ID) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: CONFIG.SCOPE,
+    callback: async (resp) => {
+      if (resp.error){ setSync('error','gagal masuk'); return; }
+      accessToken = resp.access_token;
+      el('btnAuth').textContent = 'Tersambung';
+      el('btnAuth').disabled = true;
+      setSync('busy','memuat data...');
+      await loadOrCreateDb();
+    }
+  });
+}
+el('btnAuth').addEventListener('click', () => {
+  if (!ensureClientId()) return;
+  if (!tokenClient) initAuth();
+  tokenClient.requestAccessToken();
+});
+el('btnSettings').addEventListener('click', () => el('configCard').classList.toggle('show'));
+el('btnSaveClientId').addEventListener('click', () => {
+  const val = el('clientIdInput').value.trim();
+  if (!val) return;
+  CONFIG.CLIENT_ID = val;
+  initAuth();
+  setSync('off','client id diterapkan, silakan masuk');
+});
+
+// ---------- Drive helpers ----------
+async function driveFetch(url, options = {}){
+  const headers = Object.assign({}, options.headers, { 'Authorization': 'Bearer ' + accessToken });
+  const res = await fetch(url, Object.assign({}, options, { headers }));
+  if (!res.ok){ const t = await res.text(); throw new Error('Drive API error ' + res.status + ': ' + t); }
+  return res;
+}
+async function findDbFile(){
+  const q = encodeURIComponent(`name='${CONFIG.DB_FILENAME}' and '${CONFIG.FOLDER_ID}' in parents and trashed=false`);
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+  const data = await res.json();
+  return (data.files && data.files[0]) ? data.files[0].id : null;
+}
+async function createDbFile(initialContent){
+  const boundary = '-------bsk' + Date.now();
+  const metadata = { name: CONFIG.DB_FILENAME, parents: [CONFIG.FOLDER_ID], mimeType: 'application/json' };
+  const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+               `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(initialContent)}\r\n--${boundary}--`;
+  const res = await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    method:'POST', headers:{'Content-Type':`multipart/related; boundary=${boundary}`}, body
+  });
+  const data = await res.json();
+  return data.id;
+}
+async function readDbFile(fileId){
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  return res.json();
+}
+async function writeDbFile(fileId, content){
+  await driveFetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(content)
+  });
+}
+async function loadOrCreateDb(){
+  try{
+    let id = await findDbFile();
+    if (!id){ id = await createDbFile(state); }
+    else { const c = await readDbFile(id); if (c){ state.receipts = c.receipts||[]; state.attendance = c.attendance||[]; } }
+    dbFileId = id;
+    setSync('off','tersimpan · ' + new Date().toLocaleTimeString('id-ID'));
+    renderAll();
+  } catch(err){ console.error(err); setSync('error','gagal memuat database'); }
+}
+async function saveToDrive(){
+  if (!dbFileId) return;
+  setSync('busy','menyimpan...');
+  try{ await writeDbFile(dbFileId, state); setSync('off','tersimpan · ' + new Date().toLocaleTimeString('id-ID')); }
+  catch(err){ console.error(err); setSync('error','gagal menyimpan'); }
+}
+
+// ---------- Tanda Terima Uang ----------
+function nextReceiptNumber(){
+  const n = state.receipts.length + 1;
+  const now = new Date();
+  const bulan = String(now.getMonth()+1).padStart(2,'0');
+  return String(n).padStart(3,'0') + '/TT-BSK/' + bulan + '/' + now.getFullYear();
+}
+function renderReceiptForm(){
+  document.querySelectorAll('#receiptForm [data-f]').forEach(i => i.value='');
+}
+function renderReceiptTable(){
+  const filter = el('searchReceipt').value.trim().toLowerCase();
+  const rows = state.receipts.filter(r => !filter ||
+    [r.nomor,r.dari,r.keperluan].some(v => (v||'').toLowerCase().includes(filter)));
+  el('receiptBody').innerHTML = rows.map(r => `
+    <tr>
+      <td class="mono">${r.nomor}</td>
+      <td>${tglIndo(r.tanggal)}</td>
+      <td>${(r.dari||'').replace(/</g,'&lt;')}</td>
+      <td>${rupiah(r.jumlah)}</td>
+      <td>${(r.keperluan||'').replace(/</g,'&lt;')}</td>
+      <td class="row-actions">
+        <button data-print="${r._id}">Cetak</button>
+        <button data-edit-r="${r._id}">Ubah</button>
+        <button class="ghost-danger" data-del-r="${r._id}">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+  el('receiptEmpty').style.display = rows.length ? 'none' : 'block';
+  el('receiptCount').textContent = rows.length + ' data';
+}
+el('searchReceipt').addEventListener('input', renderReceiptTable);
+
+el('btnSubmitReceipt').addEventListener('click', () => {
+  if (!accessToken){ alert('Masuk dengan Google terlebih dahulu.'); return; }
+  const v = {};
+  document.querySelectorAll('#receiptForm [data-f]').forEach(i => v[i.dataset.f] = i.value.trim());
+  if (!v.dari || !v.jumlah){ alert('Isi minimal "Diterima dari" dan "Jumlah".'); return; }
+
+  if (editingReceiptId){
+    const rec = state.receipts.find(r => r._id === editingReceiptId);
+    Object.assign(rec, v);
+    resetReceiptForm();
+  } else {
+    state.receipts.unshift(Object.assign({ _id: uid(), nomor: nextReceiptNumber() }, v));
+    resetReceiptForm();
+  }
+  renderReceiptTable();
+  saveToDrive();
+});
+function resetReceiptForm(){
+  editingReceiptId = null;
+  el('receiptFormTitle').textContent = 'Buat Tanda Terima';
+  el('btnSubmitReceipt').textContent = 'Simpan & Buat Nomor';
+  el('btnCancelReceipt').style.display = 'none';
+  renderReceiptForm();
+}
+el('btnCancelReceipt').addEventListener('click', resetReceiptForm);
+
+el('receiptBody').addEventListener('click', (e) => {
+  const printId = e.target.dataset.print;
+  const editId = e.target.dataset.editR;
+  const delId = e.target.dataset.delR;
+  if (printId) return printReceipt(printId);
+  if (editId){
+    const r = state.receipts.find(x => x._id === editId);
+    if (!r) return;
+    editingReceiptId = editId;
+    el('receiptFormTitle').textContent = 'Ubah Tanda Terima ' + r.nomor;
+    el('btnSubmitReceipt').textContent = 'Simpan Perubahan';
+    el('btnCancelReceipt').style.display = 'block';
+    document.querySelectorAll('#receiptForm [data-f]').forEach(i => i.value = r[i.dataset.f] || '');
+  } else if (delId){
+    if (!confirm('Hapus tanda terima ini?')) return;
+    state.receipts = state.receipts.filter(r => r._id !== delId);
+    renderReceiptTable();
+    saveToDrive();
+  }
+});
+
+function printReceipt(id){
+  const r = state.receipts.find(x => x._id === id);
+  if (!r) return;
+  el('printArea').innerHTML = `
+    <div class="receipt-box">
+      <h2>TANDA TERIMA UANG</h2>
+      <div class="sub">No: ${r.nomor}</div>
+      <div class="receipt-row"><div class="label">Tanggal</div><div class="colon">:</div><div>${tglIndo(r.tanggal)}</div></div>
+      <div class="receipt-row"><div class="label">Diterima dari</div><div class="colon">:</div><div>${r.dari||''}</div></div>
+      <div class="receipt-row"><div class="label">Jumlah uang</div><div class="colon">:</div><div>${rupiah(r.jumlah)}</div></div>
+      <div class="receipt-row"><div class="label">Untuk keperluan</div><div class="colon">:</div><div>${r.keperluan||''}</div></div>
+      <div class="receipt-sign">
+        <div><div>Yang menyerahkan</div><div class="line">&nbsp;</div></div>
+        <div><div>${r.penerima || 'Yang menerima'}</div><div class="line">&nbsp;</div></div>
+      </div>
+    </div>`;
+  window.print();
+}
+
+// ---------- Daftar Hadir ----------
+function renderAttForm(){ document.querySelectorAll('#attForm [data-f]').forEach(i => { if(i.tagName==='SELECT') i.value='Hadir'; else i.value=''; }); }
+function renderAttTable(){
+  const filter = el('searchAtt').value.trim().toLowerCase();
+  const rows = state.attendance.filter(r => !filter ||
+    [r.nama,r.kegiatan,r.jabatan].some(v => (v||'').toLowerCase().includes(filter)));
+  el('attBody').innerHTML = rows.map(r => `
+    <tr>
+      <td>${tglIndo(r.tanggal)}</td>
+      <td>${(r.kegiatan||'').replace(/</g,'&lt;')}</td>
+      <td>${(r.nama||'').replace(/</g,'&lt;')}</td>
+      <td>${(r.jabatan||'').replace(/</g,'&lt;')}</td>
+      <td><span class="status-pill status-${(r.status||'hadir').toLowerCase()}">${r.status||'Hadir'}</span></td>
+      <td class="row-actions">
+        <button data-edit-a="${r._id}">Ubah</button>
+        <button class="ghost-danger" data-del-a="${r._id}">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+  el('attEmpty').style.display = rows.length ? 'none' : 'block';
+  el('attCount').textContent = rows.length + ' data';
+}
+el('searchAtt').addEventListener('input', renderAttTable);
+
+el('btnSubmitAtt').addEventListener('click', () => {
+  if (!accessToken){ alert('Masuk dengan Google terlebih dahulu.'); return; }
+  const v = {};
+  document.querySelectorAll('#attForm [data-f]').forEach(i => v[i.dataset.f] = i.value.trim());
+  if (!v.nama){ alert('Isi nama peserta.'); return; }
+
+  if (editingAttId){
+    const rec = state.attendance.find(r => r._id === editingAttId);
+    Object.assign(rec, v);
+    resetAttForm();
+  } else {
+    state.attendance.unshift(Object.assign({ _id: uid() }, v));
+    resetAttForm();
+  }
+  renderAttTable();
+  saveToDrive();
+});
+function resetAttForm(){
+  editingAttId = null;
+  el('attFormTitle').textContent = 'Tambah Kehadiran';
+  el('btnSubmitAtt').textContent = 'Simpan Data';
+  el('btnCancelAtt').style.display = 'none';
+  renderAttForm();
+}
+el('btnCancelAtt').addEventListener('click', resetAttForm);
+
+el('attBody').addEventListener('click', (e) => {
+  const editId = e.target.dataset.editA;
+  const delId = e.target.dataset.delA;
+  if (editId){
+    const r = state.attendance.find(x => x._id === editId);
+    if (!r) return;
+    editingAttId = editId;
+    el('attFormTitle').textContent = 'Ubah Data Kehadiran';
+    el('btnSubmitAtt').textContent = 'Simpan Perubahan';
+    el('btnCancelAtt').style.display = 'block';
+    document.querySelectorAll('#attForm [data-f]').forEach(i => i.value = r[i.dataset.f] || '');
+  } else if (delId){
+    if (!confirm('Hapus data kehadiran ini?')) return;
+    state.attendance = state.attendance.filter(r => r._id !== delId);
+    renderAttTable();
+    saveToDrive();
+  }
+});
+
+el('btnPrintAtt').addEventListener('click', () => {
+  const filter = el('searchAtt').value.trim().toLowerCase();
+  const rows = state.attendance.filter(r => !filter ||
+    [r.nama,r.kegiatan,r.jabatan].some(v => (v||'').toLowerCase().includes(filter)));
+  if (!rows.length){ alert('Tidak ada data untuk dicetak.'); return; }
+  const judul = rows[0].kegiatan || 'Daftar Hadir';
+  el('printArea').innerHTML = `
+    <div class="attendance-print">
+      <h2>DAFTAR HADIR</h2>
+      <div class="sub">${judul}</div>
+      <table>
+        <thead><tr><th>No</th><th>Nama</th><th>Jabatan/Kelas</th><th>Status</th><th>Tanda Tangan</th></tr></thead>
+        <tbody>
+          ${rows.map((r,i) => `<tr><td>${i+1}</td><td>${r.nama||''}</td><td>${r.jabatan||''}</td><td>${r.status||''}</td><td></td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  window.print();
+});
+
+// ---------- Init ----------
+function renderAll(){ renderReceiptForm(); renderReceiptTable(); renderAttForm(); renderAttTable(); }
+renderAll();
+window.addEventListener('load', () => { if (CONFIG.CLIENT_ID) initAuth(); else ensureClientId(); });
+</script>
+</body>
+</html>
